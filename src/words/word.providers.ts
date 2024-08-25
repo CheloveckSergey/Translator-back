@@ -1,7 +1,7 @@
 import { DataSource } from "typeorm";
 import { Word } from "./word.entity";
 import { UserWord } from "./user-word.entity";
-// import { TodayWord } from "./today-word.entity";
+import { Translation } from "./translation.entity";
 
 export const wordProviders = [
   {
@@ -14,9 +14,9 @@ export const wordProviders = [
     useFactory: (dataSource: DataSource) => dataSource.getRepository(UserWord),
     inject: ['FUCKING_SOURSE'],
   },
-  // {
-  //   provide: 'TODAY_WORD_REPOSITORY',
-  //   useFactory: (dataSource: DataSource) => dataSource.getRepository(TodayWord),
-  //   inject: ['FUCKING_SOURSE'],
-  // },
+  {
+    provide: 'TRANSLATION_REPOSITORY',
+    useFactory: (dataSource: DataSource) => dataSource.getRepository(Translation),
+    inject: ['FUCKING_SOURSE'],
+  },
 ];

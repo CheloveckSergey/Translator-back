@@ -1,5 +1,6 @@
-import { Column, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { UserWord } from "./user-word.entity";
+import { Translation } from "./translation.entity";
 // import { TodayWord } from "./today-word.entity";
 
 @Entity({
@@ -12,12 +13,9 @@ export class Word {
   @Column({ length: 100 })
   value: string;
 
-  @Column({ length: 100 })
-  translation: string;
-
   @OneToMany(() => UserWord, (userWord) => userWord.word)
   userWords: UserWord[];
 
-  // @OneToOne(() => TodayWord, (todayWord) => todayWord.word)
-  // todayWord: TodayWord;
+  @OneToOne(() => Translation, (translation) => translation.word)
+  translation: Translation;
 }

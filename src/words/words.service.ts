@@ -5,6 +5,7 @@ import { UserWord, WordStatus } from './user-word.entity';
 import axios from 'axios';
 import { TranslatorApiService } from 'src/translator-api/translator-api.service';
 import { User } from 'src/users/user.entity';
+import { Translation } from './translation.entity';
 // import { TodayWord } from './today-word.entity';
 
 export interface TranslationWordDto {
@@ -36,7 +37,7 @@ function mapWordTranslationDto(userWord: UserWord): TranslationWordDto {
   const translationWordDto: TranslationWordDto = {
     value: userWord.word.value,
     status: userWord.status,
-    translation: userWord.word.translation,
+    translation: userWord.word.translation.value,
     createDate: userWord.createDate,
     updateDate: userWord.updateDate,
     quantity: userWord.quantity,
@@ -54,8 +55,8 @@ export class WordsService {
     private userWordRepository: Repository<UserWord>,
     @Inject('USER_REPOSITORY') 
     private userRep: Repository<User>,
-    // @Inject('TODAY_WORD_REPOSITORY')
-    // private todayWordRep: Repository<TodayWord>,
+    @Inject('TRANSLATION_REPOSITORY') 
+    private translationRep: Repository<Translation>,
     private translatorApiService: TranslatorApiService,
   ) {}
 
@@ -66,16 +67,26 @@ export class WordsService {
         user,
       },
       relations: {
-        word: true,
+        word: {
+          translation: true,
+        },
       }
     });
     const translationWordDtos = words.map(word => mapWordTranslationDto(word));
     return translationWordDtos;
   }
 
+  //Нужен перевод или userWord?
   async getTranslation(value: string, userId: number): Promise<TranslationWordDto> {
     const user = await this.userRep.findOneBy({ id: userId });
-    const word = await this.wordRepository.findOneBy({ value });
+    const word = await this.wordRepository.findOne({
+      where: {
+        value,
+      },
+      relations: {
+        translation: true,
+      },
+    });
     if (word) {
       const userWord = await this.userWordRepository.findOneBy({
         word,
@@ -85,7 +96,7 @@ export class WordsService {
         const translationWord: TranslationWordDto = {
           value: word.value,
           status: 'never',
-          translation: word.translation,
+          translation: word.translation.value,
           createDate: 'never',
           updateDate: 'never',
           quantity: 0,
@@ -95,7 +106,7 @@ export class WordsService {
         const translationWord: TranslationWordDto = {
           value: word.value,
           status: userWord.status,
-          translation: word.translation,
+          translation: word.translation.value,
           createDate: userWord.createDate,
           updateDate: userWord.updateDate,
           quantity: userWord.quantity,
@@ -108,13 +119,17 @@ export class WordsService {
 
     const newWord = new Word();
     newWord.value = value;
-    newWord.translation = translation;
+
+    const newTranslation = new Translation();
+    newTranslation.value = translation
+    newWord.translation = newTranslation;
+    await this.translationRep.save(newTranslation);
     await this.wordRepository.save(newWord);
 
     const translationWord: TranslationWordDto = {
       value: newWord.value,
       status: 'never',
-      translation: translation,
+      translation: newTranslation.value,
       createDate: 'never',
       updateDate: 'never',
       quantity: 0,
@@ -146,7 +161,9 @@ export class WordsService {
         onList: true,
       },
       relations: {
-        word: true,
+        word: {
+          translation: true,
+        },
       }
     });
     if (againUserWords.length) {
@@ -155,7 +172,7 @@ export class WordsService {
       .map(userWord => {
         return {
           value: userWord.word.value,
-          translation: userWord.word.translation,
+          translation: userWord.word.translation.value,
           status: userWord.status,
           updateDate: userWord.updateDate,
           createDate: userWord.createDate,
@@ -172,14 +189,14 @@ export class WordsService {
         status: WordStatus.PROCESS,
       },
       relations: {
-        word: true,
+        word: {
+          translation: true
+        },
       }
     });
     const newList: UserWord[] = [];
     for (let userWord of andAgainUserWords) {
       const daysDifference = (Date.now() - userWord.quantityUpdate.getTime()) / (1000 * 3600);
-      console.log(userWord.id);
-      console.log(daysDifference);
       // console.log((Date.now() - userWord.updateDate.getTime()) / (1000 * 3600))
       if ((daysDifference >= 1) && ((userWord.quantity === 0) || (userWord.quantity === 1))) {
         newList.push(userWord);
@@ -210,7 +227,7 @@ export class WordsService {
     const newTodayList: TranslationWordDto[] = newList.map(userWord => {
       return {
         value: userWord.word.value,
-        translation: userWord.word.translation,
+        translation: userWord.word.translation.value,
         status: userWord.status,
         updateDate: userWord.updateDate,
         createDate: userWord.createDate,

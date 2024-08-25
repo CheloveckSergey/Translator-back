@@ -12,9 +12,6 @@ export interface WordSpanDto {
   type: 'word',
   value: string,
   status: WordStatus | 'never',
-  // translation: string | undefined,
-  // createDate: string,
-  // updateDate: string,
 }
 
 export interface ConnectionDto {
