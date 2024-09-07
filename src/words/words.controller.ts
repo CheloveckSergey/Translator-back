@@ -19,6 +19,14 @@ export class WordsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('/getLastWords')
+  async getLastWords(
+    @Req() req: { userPayload: TokenPayload },
+  ) {
+    return this.wordsService.getLastWords(req.userPayload.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('/getWordTranslation/:value')
   async getTranslation(
     @Param('value') value: string,

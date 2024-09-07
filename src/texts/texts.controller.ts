@@ -27,6 +27,14 @@ export class TextsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('/getLastTextsByUser')
+  async getLastTextsByUser(
+    @Req() req: { userPayload: TokenPayload }
+  ) {
+    return this.textsService.getLastTextsByUser(req.userPayload.id)
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('/getTextArray/:textId')
   async getTextArray(
     @Req() req: { userPayload: TokenPayload },
@@ -51,6 +59,15 @@ export class TextsController {
     @Req() req: { userPayload: TokenPayload }
   ) {
     return this.textsService.changeName(dto.name, dto.textId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('/getTranslation')
+  async getTranslation(
+    @Body() dto: { value: string },
+    @Req() req: { userPayload: TokenPayload }
+  ) {
+    return this.textsService.getTranslation(dto.value, req.userPayload.id);
   }
 
   @UseGuards(JwtAuthGuard)

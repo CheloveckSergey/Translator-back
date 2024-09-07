@@ -16,6 +16,9 @@ import { userProviders } from 'src/users/user.providers';
     ...wordProviders,
     ...userProviders,
     WordsService
+  ],
+  exports: [
+    WordsService,
   ]
 })
 export class WordsModule {}

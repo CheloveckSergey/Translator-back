@@ -5,6 +5,8 @@ import { User } from 'src/users/user.entity';
 import { UserWord, WordStatus } from 'src/words/user-word.entity';
 import { Word } from 'src/words/word.entity';
 import { TranslatorApiService } from 'src/translator-api/translator-api.service';
+import { TransWordDto, WordsService } from 'src/words/words.service';
+import { Translation } from 'src/words/translation.entity';
 
 export type StringSpanDto = WordSpanDto | ConnectionDto; 
 
@@ -26,6 +28,15 @@ export interface TextSpanDto {
   translation: string | undefined,
 }
 
+export type TranslationDto = TransTextDto | TransWordDto;
+
+interface TransTextDto {
+  type: 'text',
+  value: string,
+  stringSpans: StringSpanDto[],
+  translation: string,
+}
+
 @Injectable()
 export class TextsService {
 
@@ -38,7 +49,10 @@ export class TextsService {
     private userWordRep: Repository<UserWord>,
     @Inject('WORD_REPOSITORY')
     private wordRep: Repository<Word>,
-    private transApiServie: TranslatorApiService,
+    @Inject('TRANSLATION_REPOSITORY')
+    private translationRep: Repository<Translation>,
+    private transApiService: TranslatorApiService,
+    private wordsService: WordsService,
   ) {}
 
   async getAllTexts() {
@@ -51,6 +65,20 @@ export class TextsService {
     const texts = await this.textRep.find({
       where: {
         user,
+      }
+    });
+    return texts;
+  }
+
+  async getLastTextsByUser(userId: number) {
+    const user = await this.userRep.findOneBy({ id: userId });
+    const texts = await this.textRep.find({
+      where: {
+        user,
+      },
+      take: 3,
+      order: {
+        id: 'DESC',
       }
     });
     return texts;
@@ -114,12 +142,81 @@ export class TextsService {
     return textArrayDto;
   }
 
+  async getStringSpans(text: string, userId: number): Promise<StringSpanDto[]> {
+    const user = await this.userRep.findOneBy({ id: userId });
+
+    const regexp = /\b(\w+)\b('\w+)*|\.|,|\s|:|-|;|!|\?/gi;
+    const result = text.match(regexp);
+
+    const stringSpans: StringSpanDto[] = await Promise.all(result.map(async match => {
+      const textRE = /\w+/gi;
+      if (textRE.test(match)) {
+        const word = await this.wordRep.findOneBy({ value: match });
+        if (!word) {
+          const stringSpan: WordSpanDto = {
+            type: 'word',
+            value: match,
+            status: 'never',
+          }
+          return stringSpan
+        }
+        const userWord = await this.userWordRep.findOne({
+          where: {
+            user,
+            word
+          }
+        });
+        if (!userWord) {
+          const stringSpan: WordSpanDto = {
+            type: 'word',
+            value: match,
+            status: 'never',
+          }
+          return stringSpan;
+        } else {
+          const stringSpan: WordSpanDto = {
+            type: 'word',
+            value: match,
+            status: userWord.status,
+          }
+          return stringSpan;
+        }
+      } else {
+        const stringSpan: ConnectionDto = {
+          type: 'connection',
+          value: match,
+        }
+        return stringSpan;
+      }
+    }));
+    return stringSpans;
+  }
+
+  async getTranslation(value: string, userId: number): Promise<TranslationDto> {
+    // const user = await this.userRep.findOneBy({ id: userId });
+
+    const textRE = /\w+/gi;
+    if (textRE.test(value)) {
+      return this.wordsService.getTranslationWithStatus(value, userId)
+    } else {
+      const stringSpans = await this.getStringSpans(value, userId);
+      const translation = await this.transApiService.translate(value);
+      const transTextDto: TransTextDto = {
+        type: 'text',
+        value: value,
+        stringSpans: stringSpans,
+        translation,
+      }
+      return transTextDto;
+    }
+  }
+
   async createText(name: string, content: string, userId: number) {
     const text = new Text();
     text.name = name;
     text.content = content;
 
-    const translation = await this.transApiServie.translate(content);
+    const translation = await this.transApiService.translate(content);
 
     text.translation = translation;
 
