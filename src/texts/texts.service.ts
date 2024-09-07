@@ -5,21 +5,8 @@ import { User } from 'src/users/user.entity';
 import { UserWord, WordStatus } from 'src/words/user-word.entity';
 import { Word } from 'src/words/word.entity';
 import { TranslatorApiService } from 'src/translator-api/translator-api.service';
-import { TransWordDto, WordsService } from 'src/words/words.service';
+import { ConnectionDto, StringSpanDto, TransWordDto, WordSpanDto, WordsService } from 'src/words/words.service';
 import { Translation } from 'src/words/translation.entity';
-
-export type StringSpanDto = WordSpanDto | ConnectionDto; 
-
-export interface WordSpanDto {
-  type: 'word',
-  value: string,
-  status: WordStatus | 'never',
-}
-
-export interface ConnectionDto {
-  type: 'connection',
-  value: string,
-}
 
 export interface TextSpanDto {
   id: number,
@@ -27,6 +14,8 @@ export interface TextSpanDto {
   stringSpans: StringSpanDto[], 
   translation: string | undefined,
 }
+
+
 
 export type TranslationDto = TransTextDto | TransWordDto;
 
@@ -36,6 +25,8 @@ interface TransTextDto {
   stringSpans: StringSpanDto[],
   translation: string,
 }
+
+
 
 @Injectable()
 export class TextsService {

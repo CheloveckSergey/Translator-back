@@ -6,22 +6,43 @@ import { TranslatorApiService } from 'src/translator-api/translator-api.service'
 import { User } from 'src/users/user.entity';
 import { Translation } from './translation.entity';
 
-export interface TranslationWordDto {
+export type StringSpanDto = WordSpanDto | ConnectionDto;
+
+export interface WordSpanDto {
+  type: 'word',
+  value: string,
+  status: WordStatus | 'never',
+}
+
+export interface ConnectionDto {
+  type: 'connection',
+  value: string,
+}
+
+
+
+export interface TransWordDto {
   value: string,
   translation: string,
 }
 
-export interface TransWordDto {
+
+
+export interface TransStatusWordDto {
   type: 'word',
   value: string,
   translation: string,
   status: WordStatus | 'never',
 }
 
+
+
 export interface TodayWordDto {
   value: string,
   translation: string,
 }
+
+
 
 export interface WholeWordDto {
   value: string,
@@ -31,6 +52,8 @@ export interface WholeWordDto {
   updateDate: Date,
   quantity: number,
 }
+
+
 
 function isToday(date: Date): boolean {
   if (!date) {
@@ -48,8 +71,8 @@ function isToday(date: Date): boolean {
   }  
 }
 
-function mapTranslationWordDto(word: Word): TranslationWordDto {
-  const translationWordDto: TranslationWordDto = {
+function mapTranslationWordDto(word: Word): TransWordDto {
+  const translationWordDto: TransWordDto = {
     value: word.value,
     translation: word.translation.value,
   }
@@ -91,7 +114,7 @@ export class WordsService {
     private translatorApiService: TranslatorApiService,
   ) {}
 
-  async getAllWords(userId: number): Promise<TranslationWordDto[]> {
+  async getAllWords(userId: number): Promise<WholeWordDto[]> {
     const user = await this.userRep.findOneBy({ id: userId });
     const words = await this.userWordRepository.find({
       where: {
@@ -107,7 +130,7 @@ export class WordsService {
     return translationWordDtos;
   }
 
-  async getLastWords(userId: number): Promise<TranslationWordDto[]> {
+  async getLastWords(userId: number): Promise<WholeWordDto[]> {
     const user = await this.userRep.findOneBy({ id: userId });
     const words = await this.userWordRepository.find({
       where: {
@@ -127,7 +150,7 @@ export class WordsService {
     return translationWordDtos;
   }
 
-  async getTranslation(value: string, userId: number): Promise<TranslationWordDto> {
+  async getTranslation(value: string, userId: number): Promise<TransWordDto> {
     const word = await this.wordRepository.findOne({
       where: {
         value,
@@ -181,7 +204,7 @@ export class WordsService {
       await this.translationRep.save(newTranslation);
       await this.wordRepository.save(newWord);
 
-      const trans: TransWordDto = {
+      const trans: TransStatusWordDto = {
         type: 'word',
         value,
         translation: newTranslation.value,
@@ -196,7 +219,7 @@ export class WordsService {
       }
     });
     if (!userWord) {
-      const trans: TransWordDto = {
+      const trans: TransStatusWordDto = {
         type: 'word',
         value,
         translation: word.translation.value,
@@ -204,7 +227,7 @@ export class WordsService {
       }
       return trans;
     } else {
-      const trans: TransWordDto = {
+      const trans: TransStatusWordDto = {
         type: 'word',
         value,
         translation: word.translation.value,
@@ -244,7 +267,7 @@ export class WordsService {
       }
     });
     if (againUserWords.length) {
-      const todayList: TranslationWordDto[] = againUserWords
+      const todayList: TodayWordDto[] = againUserWords
       .filter(word => !isToday(word.quantityUpdate))
       .map(userWord => {
         return mapTodayWordDto(userWord)
@@ -294,7 +317,7 @@ export class WordsService {
       }
     }
 
-    const newTodayList: TranslationWordDto[] = newList.map(userWord => {
+    const newTodayList: TodayWordDto[] = newList.map(userWord => {
       return mapTodayWordDto(userWord)
     });
     return newTodayList;
