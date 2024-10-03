@@ -1,32 +1,15 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Repository, getRepository } from 'typeorm';
 import { Text } from './text.entity';
 import { User } from 'src/users/user.entity';
 import { UserWord, WordStatus } from 'src/words/user-word.entity';
 import { Word } from 'src/words/word.entity';
 import { TranslatorApiService } from 'src/translator-api/translator-api.service';
-import { ConnectionDto, StringSpanDto, TransWordDto, WordSpanDto, WordsService } from 'src/words/words.service';
+import { WordsService } from 'src/words/words.service';
 import { Translation } from 'src/words/translation.entity';
-
-export interface TextSpanDto {
-  id: number,
-  name: string,
-  stringSpans: StringSpanDto[], 
-  translation: string | undefined,
-}
-
-
-
-export type TranslationDto = TransTextDto | TransWordDto;
-
-interface TransTextDto {
-  type: 'text',
-  value: string,
-  stringSpans: StringSpanDto[],
-  translation: string,
-}
-
-
+import { TextSpanDto, TransTextDto, TranslationDto } from './dto';
+import { ConnectionDto, StringSpanDto, WordSpanDto } from 'src/words/dto';
+import { TextPreviewsQuery } from './texts.controller';
 
 @Injectable()
 export class TextsService {
@@ -46,37 +29,29 @@ export class TextsService {
     private wordsService: WordsService,
   ) {}
 
-  async getAllTexts() {
-    const texts = await this.textRep.find();
-    return texts;
+  async getAllTextPreviewsByUser(query: TextPreviewsQuery) {
+    const textsQb = await this.textRep.createQueryBuilder('text');
+
+    if (query.userId) {
+      textsQb.where("text.userId = :userId", { userId: query.userId });
+    }
+
+    if (query.limit) {
+      textsQb.limit(query.limit);
+    }
+
+    if (query.offset) {
+      textsQb.offset(query.offset);
+    }
+
+    if (query.order) {
+      textsQb.orderBy('text.id', query.order);
+    }
+
+    return textsQb.getMany();
   }
 
-  async getAllTextsByUser(userId: number) {
-    const user = await this.userRep.findOneBy({ id: userId });
-    const texts = await this.textRep.find({
-      where: {
-        user,
-      }
-    });
-    return texts;
-  }
-
-  async getLastTextsByUser(userId: number) {
-    const user = await this.userRep.findOneBy({ id: userId });
-    const texts = await this.textRep.find({
-      where: {
-        user,
-      },
-      take: 3,
-      order: {
-        id: 'DESC',
-      }
-    });
-    return texts;
-  }
-
-  async getTextArray(textId: number, userId: number): Promise<TextSpanDto> {
-    const user = await this.userRep.findOneBy({ id: userId });
+  async getTextSpan(textId: number, userId: number): Promise<TextSpanDto> {
     const text = await this.textRep.findOneBy({ id: textId });
 
     const regexp = /\b(\w+)\b('\w+)*|\.|,|\s|:|-|;|!|\?/gi;
@@ -85,36 +60,7 @@ export class TextsService {
     const stringSpans: StringSpanDto[] = await Promise.all(result.map(async match => {
       const textRE = /\w+/gi;
       if (textRE.test(match)) {
-        const word = await this.wordRep.findOneBy({ value: match });
-        if (!word) {
-          const stringSpan: WordSpanDto = {
-            type: 'word',
-            value: match,
-            status: 'never',
-          }
-          return stringSpan
-        }
-        const userWord = await this.userWordRep.findOne({
-          where: {
-            user,
-            word
-          }
-        });
-        if (!userWord) {
-          const stringSpan: WordSpanDto = {
-            type: 'word',
-            value: match,
-            status: 'never',
-          }
-          return stringSpan;
-        } else {
-          const stringSpan: WordSpanDto = {
-            type: 'word',
-            value: match,
-            status: userWord.status,
-          }
-          return stringSpan;
-        }
+        return await this.wordsService.mapWordSpan(match, userId);
       } else {
         const stringSpan: ConnectionDto = {
           type: 'connection',
@@ -124,78 +70,24 @@ export class TextsService {
       }
     }));
 
-    const textArrayDto: TextSpanDto = {
+    const textSpan: TextSpanDto = {
       id: text.id,
       name: text.name,
       stringSpans: stringSpans,
       translation: text.translation,
     }
-    return textArrayDto;
-  }
-
-  async getStringSpans(text: string, userId: number): Promise<StringSpanDto[]> {
-    const user = await this.userRep.findOneBy({ id: userId });
-
-    const regexp = /\b(\w+)\b('\w+)*|\.|,|\s|:|-|;|!|\?/gi;
-    const result = text.match(regexp);
-
-    const stringSpans: StringSpanDto[] = await Promise.all(result.map(async match => {
-      const textRE = /\w+/gi;
-      if (textRE.test(match)) {
-        const word = await this.wordRep.findOneBy({ value: match });
-        if (!word) {
-          const stringSpan: WordSpanDto = {
-            type: 'word',
-            value: match,
-            status: 'never',
-          }
-          return stringSpan
-        }
-        const userWord = await this.userWordRep.findOne({
-          where: {
-            user,
-            word
-          }
-        });
-        if (!userWord) {
-          const stringSpan: WordSpanDto = {
-            type: 'word',
-            value: match,
-            status: 'never',
-          }
-          return stringSpan;
-        } else {
-          const stringSpan: WordSpanDto = {
-            type: 'word',
-            value: match,
-            status: userWord.status,
-          }
-          return stringSpan;
-        }
-      } else {
-        const stringSpan: ConnectionDto = {
-          type: 'connection',
-          value: match,
-        }
-        return stringSpan;
-      }
-    }));
-    return stringSpans;
+    return textSpan;
   }
 
   async getTranslation(value: string, userId: number): Promise<TranslationDto> {
-    // const user = await this.userRep.findOneBy({ id: userId });
-
     const textRE = /\w+/gi;
     if (textRE.test(value)) {
       return this.wordsService.getTranslationWithStatus(value, userId)
     } else {
-      const stringSpans = await this.getStringSpans(value, userId);
       const translation = await this.transApiService.translate(value);
       const transTextDto: TransTextDto = {
         type: 'text',
         value: value,
-        stringSpans: stringSpans,
         translation,
       }
       return transTextDto;
@@ -215,10 +107,8 @@ export class TextsService {
 
     text.user = user;
     await this.textRep.save(text);
-    const newText = await this.textRep.findOneBy({
-      name,
-    })
-    return newText;
+    
+    return text
   }
 
   async changeName(name: string, textId: number) {

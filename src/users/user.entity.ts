@@ -1,5 +1,6 @@
+import { FriendRequest } from "src/friends/request.entity";
 import { UserWord } from "src/words/user-word.entity";
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity({
   name: 'users',
@@ -16,4 +17,14 @@ export class User {
 
   @OneToMany(() => UserWord, (userWord) => userWord.user)
   userWords: UserWord[];
+
+  @ManyToMany(() => User)
+  @JoinTable()
+  friends: User[];
+
+  @OneToMany(() => FriendRequest, (request) => request.fromUser)
+  fromRequests: FriendRequest[];
+
+  @OneToMany(() => FriendRequest, (request) => request.toUser)
+  toRequests: FriendRequest[];
 }

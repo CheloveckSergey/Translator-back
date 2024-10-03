@@ -5,55 +5,9 @@ import { UserWord, WordStatus } from './user-word.entity';
 import { TranslatorApiService } from 'src/translator-api/translator-api.service';
 import { User } from 'src/users/user.entity';
 import { Translation } from './translation.entity';
-
-export type StringSpanDto = WordSpanDto | ConnectionDto;
-
-export interface WordSpanDto {
-  type: 'word',
-  value: string,
-  status: WordStatus | 'never',
-}
-
-export interface ConnectionDto {
-  type: 'connection',
-  value: string,
-}
-
-
-
-export interface TransWordDto {
-  value: string,
-  translation: string,
-}
-
-
-
-export interface TransStatusWordDto {
-  type: 'word',
-  value: string,
-  translation: string,
-  status: WordStatus | 'never',
-}
-
-
-
-export interface TodayWordDto {
-  value: string,
-  translation: string,
-}
-
-
-
-export interface WholeWordDto {
-  value: string,
-  status: WordStatus,
-  translation: string,
-  createDate: Date,
-  updateDate: Date,
-  quantity: number,
-}
-
-
+import { TodayWordDto, TransStatusWordDto, TransWordDto, WholeWordDto, WordSpanDto } from './dto';
+import { mapTodayWordDto, mapTranslationWordDto, mapWholeWordDto } from './mappers';
+import { WholeWordQuery } from './words.controller';
 
 function isToday(date: Date): boolean {
   if (!date) {
@@ -71,33 +25,6 @@ function isToday(date: Date): boolean {
   }  
 }
 
-function mapTranslationWordDto(word: Word): TransWordDto {
-  const translationWordDto: TransWordDto = {
-    value: word.value,
-    translation: word.translation.value,
-  }
-  return translationWordDto;
-}
-
-function mapTodayWordDto(userWord: UserWord): TodayWordDto {
-  const todayWordDto: TodayWordDto = {
-    value: userWord.word.value,
-    translation: userWord.word.translation.value,
-  }
-  return todayWordDto;
-}
-
-function mapWholeWordDto(userWord: UserWord): WholeWordDto {
-  const wholeWordDto: WholeWordDto = {
-    value: userWord.word.value,
-    translation: userWord.word.translation.value,
-    status: userWord.status,
-    quantity: userWord.quantity,
-    updateDate: userWord.updateDate,
-    createDate: userWord.createDate,
-  }
-  return wholeWordDto;
-}
 
 @Injectable()
 export class WordsService {
@@ -114,44 +41,34 @@ export class WordsService {
     private translatorApiService: TranslatorApiService,
   ) {}
 
-  async getAllWords(userId: number): Promise<WholeWordDto[]> {
-    const user = await this.userRep.findOneBy({ id: userId });
-    const words = await this.userWordRepository.find({
-      where: {
-        user,
-      },
-      relations: {
-        word: {
-          translation: true,
-        },
-      }
-    });
-    const translationWordDtos = words.map(word => mapWholeWordDto(word));
-    return translationWordDtos;
-  }
+  async getAllWords(query: WholeWordQuery): Promise<WholeWordDto[]> {
+    let user: User
 
-  async getLastWords(userId: number): Promise<WholeWordDto[]> {
-    const user = await this.userRep.findOneBy({ id: userId });
+    if (query.userId) {
+      user = await this.userRep.findOneBy({ id: query.userId });
+    }
+
     const words = await this.userWordRepository.find({
       where: {
-        user,
+        ...(query.userId && { user }),
       },
       relations: {
         word: {
           translation: true,
         },
       },
-      take: 5,
+      skip: query.offset,
+      take: query.limit,
       order: {
-        id: 'DESC',
+        id: query.order,
       }
     });
     const translationWordDtos = words.map(word => mapWholeWordDto(word));
     return translationWordDtos;
   }
 
-  async getTranslation(value: string, userId: number): Promise<TransWordDto> {
-    const word = await this.wordRepository.findOne({
+  async getTranslation(value: string): Promise<TransWordDto> {
+    let word = await this.wordRepository.findOne({
       where: {
         value,
       },
@@ -159,25 +76,12 @@ export class WordsService {
         translation: true,
       },
     });
-    if (word) {
-      const translationWord = mapTranslationWordDto(word);
-      return translationWord;
-    } else {
-      const translation = await this.translatorApiService.translate(value);
-  
-      const newTranslation = new Translation();
-      newTranslation.value = translation;
 
-      const newWord = new Word();
-      newWord.value = value;
-      newWord.translation = newTranslation;
-
-      await this.translationRep.save(newTranslation);
-      await this.wordRepository.save(newWord);
-
-      const translationWord = mapTranslationWordDto(newWord);
-      return translationWord;
+    if (!word) {
+      word = await this.addWord(value);
     }
+    
+    return mapTranslationWordDto(word)
   }
 
   async getTranslationWithStatus(value: string, userId: number): Promise<TransWordDto> {
@@ -191,33 +95,25 @@ export class WordsService {
         translation: true,
       }
     });
+
     if (!word) {
-      const translation = await this.translatorApiService.translate(value);
-
-      const newTranslation = new Translation();
-      newTranslation.value = translation;
-
-      const newWord = new Word();
-      newWord.value = value;
-      newWord.translation = newTranslation;
-
-      await this.translationRep.save(newTranslation);
-      await this.wordRepository.save(newWord);
-
+      const word = await this.addWord(value);
       const trans: TransStatusWordDto = {
         type: 'word',
-        value,
-        translation: newTranslation.value,
+        value: word.value,
+        translation: word.translation.value,
         status: 'never',
       }
       return trans
     }
+
     const userWord = await this.userWordRepository.findOne({
       where: {
         user,
-        word
+        word,
       }
     });
+
     if (!userWord) {
       const trans: TransStatusWordDto = {
         type: 'word',
@@ -323,11 +219,20 @@ export class WordsService {
     return newTodayList;
   }
 
-  async addWord(value: string) {
+  async addWord(value: string): Promise<Word> {
+    const translation = await this.translatorApiService.translate(value);
+  
+    const newTranslation = new Translation();
+    newTranslation.value = translation.toLowerCase();
+
     const word = new Word();
-    word.value = value;
-    this.wordRepository.save(word);
-    return word;
+    word.value = value.toLowerCase();
+    word.translation = newTranslation;
+
+    await this.translationRep.save(newTranslation);
+    await this.wordRepository.save(word);
+
+    return word
   }
 
   async addToProcess(value: string, userId: number) {
@@ -341,6 +246,7 @@ export class WordsService {
     }
 
     const userWord = await this.userWordRepository.findOneBy({ word, user});
+
     if (userWord) {
       userWord.status = WordStatus.PROCESS;
       userWord.quantity = 0;
@@ -354,6 +260,7 @@ export class WordsService {
     newUserWord.user = user;
     newUserWord.quantityUpdate = new Date();
     await this.userWordRepository.save(newUserWord);
+
     return { message: 'Успешный успех' }
   }
 
@@ -395,6 +302,9 @@ export class WordsService {
 
     userWord.quantity++;
     userWord.quantityUpdate = new Date();
+    if (userWord.quantity === 5) {
+      await this.deleteToStudied(value, userId);
+    }
     await this.userWordRepository.save(userWord);
   }
 
@@ -415,5 +325,40 @@ export class WordsService {
 
     userWord.quantityUpdate = new Date();
     await this.userWordRepository.save(userWord);
+  }
+
+  async mapWordSpan(value: string, userId: number): Promise<WordSpanDto> {
+    const user = await this.userRep.findOneBy({ id: userId });
+
+    const word = await this.wordRepository.findOneBy({ value: value.toLowerCase() });
+    if (!word) {
+      const stringSpan: WordSpanDto = {
+        type: 'word',
+        value: value,
+        status: 'never',
+      }
+      return stringSpan
+    }
+    const userWord = await this.userWordRepository.findOne({
+      where: {
+        user,
+        word
+      }
+    });
+    if (!userWord) {
+      const stringSpan: WordSpanDto = {
+        type: 'word',
+        value: value,
+        status: 'never',
+      }
+      return stringSpan;
+    } else {
+      const stringSpan: WordSpanDto = {
+        type: 'word',
+        value: value,
+        status: userWord.status,
+      }
+      return stringSpan;
+    }
   }
 }

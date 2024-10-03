@@ -85,7 +85,7 @@ export class AuthService {
   }
 
   async logout(userId: number) {
-    const user = await this.usersService.getUserById(userId);
+    const user = await this.usersService.getUserById(userId, userId);
     const refreshToken = await this.refreshTokRep.findOneBy({
       user,
     });

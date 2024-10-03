@@ -1,7 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { TextsService } from './texts.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { TokenPayload } from 'src/auth/dto';
+
+export interface TextPreviewsQuery {
+  limit?: number,
+  offset?: number,
+  order?: 'ASC' | 'DESC',
+  userId?: number,
+}
 
 @Controller('texts')
 export class TextsController {
@@ -9,38 +16,23 @@ export class TextsController {
   constructor(
     private textsService: TextsService,
   ) {}
-  
-  @UseGuards(JwtAuthGuard)
-  @Get('/getAll')
-  async getAll(
-    @Req() req: { userPayload: TokenPayload }
-  ) {
-    return this.textsService.getAllTexts()
-  }
 
   @UseGuards(JwtAuthGuard)
-  @Get('/getAllByUser')
+  @Get('/getAllTextPreviewsByUser')
   async getAllByUser(
-    @Req() req: { userPayload: TokenPayload }
+    @Req() req: { userPayload: TokenPayload },
+    @Query() query: TextPreviewsQuery,
   ) {
-    return this.textsService.getAllTextsByUser(req.userPayload.id)
+    return this.textsService.getAllTextPreviewsByUser(query)
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('/getLastTextsByUser')
-  async getLastTextsByUser(
-    @Req() req: { userPayload: TokenPayload }
-  ) {
-    return this.textsService.getLastTextsByUser(req.userPayload.id)
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('/getTextArray/:textId')
+  @Get('/getTextSpan/:textId')
   async getTextArray(
     @Req() req: { userPayload: TokenPayload },
     @Param('textId') textId: number,
   ) {
-    return this.textsService.getTextArray(textId, req.userPayload.id);
+    return this.textsService.getTextSpan(textId, req.userPayload.id);
   }
 
   @UseGuards(JwtAuthGuard)

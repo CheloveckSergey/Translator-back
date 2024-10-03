@@ -1,7 +1,14 @@
-import { Body, Controller, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { WordsService } from './words.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { TokenPayload } from 'src/auth/dto';
+
+export interface WholeWordQuery {
+  limit?: number,
+  offset?: number,
+  order?: 'ASC' | 'DESC',
+  userId?: number,
+}
 
 @Controller('words')
 export class WordsController {
@@ -14,25 +21,17 @@ export class WordsController {
   @Get('/getAllWords')
   async getAllWords(
     @Req() req: { userPayload: TokenPayload },
+    @Query() query: WholeWordQuery,
   ) {
-    return this.wordsService.getAllWords(req.userPayload.id);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('/getLastWords')
-  async getLastWords(
-    @Req() req: { userPayload: TokenPayload },
-  ) {
-    return this.wordsService.getLastWords(req.userPayload.id);
+    return this.wordsService.getAllWords(query);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('/getWordTranslation/:value')
   async getTranslation(
     @Param('value') value: string,
-    @Req() req: { userPayload: TokenPayload },
   ) {
-    return this.wordsService.getTranslation(value, req.userPayload.id);
+    return this.wordsService.getTranslation(value);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -41,13 +40,6 @@ export class WordsController {
     @Req() req: { userPayload: TokenPayload },
   ) {
     return this.wordsService.getTodayList(req.userPayload.id);
-  }
-
-  @Post('/addWord')
-  async addWord(
-    @Body() dto: { value: string }
-  ) {
-    return this.wordsService.addWord(dto.value);
   }
 
   @UseGuards(JwtAuthGuard)
