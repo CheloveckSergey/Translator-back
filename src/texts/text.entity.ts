@@ -1,5 +1,5 @@
 import { User } from "src/users/user.entity";
-import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity({
   name: 'texts',
@@ -22,4 +22,14 @@ export class Text {
   @ManyToOne(() => User)
   @JoinColumn()
   user: User;
+
+  @ManyToMany(() => User, (user) => user.copyTexts)
+  @JoinTable()
+  copyUsers: User[];
+
+  @CreateDateColumn()
+  createdDate: Date;
+
+  @UpdateDateColumn()
+  updatedDate: Date;
 }

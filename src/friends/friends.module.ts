@@ -10,6 +10,9 @@ import { DatabaseModule } from 'src/database/database.module';
   imports: [
     DatabaseModule,
   ],
+  exports: [
+    FriendsService,
+  ],
   providers: [
     FriendsService,
     ...userProviders,

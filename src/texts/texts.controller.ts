@@ -2,13 +2,7 @@ import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } fro
 import { TextsService } from './texts.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { TokenPayload } from 'src/auth/dto';
-
-export interface TextPreviewsQuery {
-  limit?: number,
-  offset?: number,
-  order?: 'ASC' | 'DESC',
-  userId?: number,
-}
+import { TextPreviewsQuery } from './dto/query';
 
 @Controller('texts')
 export class TextsController {
@@ -23,7 +17,15 @@ export class TextsController {
     @Req() req: { userPayload: TokenPayload },
     @Query() query: TextPreviewsQuery,
   ) {
-    return this.textsService.getAllTextPreviewsByUser(query)
+    return this.textsService.getAllTextPreviewsByUser(query, req.userPayload.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/getFriendsLastTexts')
+  async getFriendsLastTexts(
+    @Req() req: { userPayload: TokenPayload },
+  ) {
+    return this.textsService.getFriendsLastTexts(req.userPayload.id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -42,6 +44,24 @@ export class TextsController {
     @Req() req: { userPayload: TokenPayload }
   ) {
     return this.textsService.createText(dto.name, dto.content, req.userPayload.id)
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('/copyText')
+  async copyText(
+    @Body() dto: { textId: number },
+    @Req() req: { userPayload: TokenPayload }
+  ) {
+    return this.textsService.copyText(dto.textId, req.userPayload.id)
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('/uncopyText')
+  async uncopyText(
+    @Body() dto: { textId: number },
+    @Req() req: { userPayload: TokenPayload }
+  ) {
+    return this.textsService.uncopyText(dto.textId, req.userPayload.id)
   }
 
   @UseGuards(JwtAuthGuard)

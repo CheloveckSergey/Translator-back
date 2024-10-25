@@ -42,15 +42,13 @@ export class WordsService {
   ) {}
 
   async getAllWords(query: WholeWordQuery): Promise<WholeWordDto[]> {
-    let user: User
 
-    if (query.userId) {
-      user = await this.userRep.findOneBy({ id: query.userId });
-    }
 
     const words = await this.userWordRepository.find({
       where: {
-        ...(query.userId && { user }),
+        user: {
+          id: query.userId,
+        }
       },
       relations: {
         word: {

@@ -7,7 +7,7 @@ export interface WholeWordQuery {
   limit?: number,
   offset?: number,
   order?: 'ASC' | 'DESC',
-  userId?: number,
+  userId: number,
 }
 
 @Controller('words')

@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { Repository, getRepository } from 'typeorm';
+import { In, MoreThan, Repository, getRepository } from 'typeorm';
 import { Text } from './text.entity';
 import { User } from 'src/users/user.entity';
 import { UserWord, WordStatus } from 'src/words/user-word.entity';
@@ -7,9 +7,11 @@ import { Word } from 'src/words/word.entity';
 import { TranslatorApiService } from 'src/translator-api/translator-api.service';
 import { WordsService } from 'src/words/words.service';
 import { Translation } from 'src/words/translation.entity';
-import { TextSpanDto, TransTextDto, TranslationDto } from './dto';
+import { ShortTextPreviewDto, TextPreviewDto, TextSpanDto, TransTextDto, TranslationDto } from './dto/dto';
 import { ConnectionDto, StringSpanDto, WordSpanDto } from 'src/words/dto';
-import { TextPreviewsQuery } from './texts.controller';
+import { getOneTextPreview, mapShortTextDto } from './dto/mappers';
+import { TextPreviewsQuery } from './dto/query';
+import { FriendsService } from 'src/friends/friends.service';
 
 @Injectable()
 export class TextsService {
@@ -19,36 +21,66 @@ export class TextsService {
     private textRep: Repository<Text>,
     @Inject('USER_REPOSITORY') 
     private userRep: Repository<User>,
-    @Inject('USER_WORD_REPOSITORY')
-    private userWordRep: Repository<UserWord>,
-    @Inject('WORD_REPOSITORY')
-    private wordRep: Repository<Word>,
-    @Inject('TRANSLATION_REPOSITORY')
-    private translationRep: Repository<Translation>,
     private transApiService: TranslatorApiService,
     private wordsService: WordsService,
+    private friendsService: FriendsService,
   ) {}
 
-  async getAllTextPreviewsByUser(query: TextPreviewsQuery) {
-    const textsQb = await this.textRep.createQueryBuilder('text');
+  async getAllTextPreviewsByUser(query: TextPreviewsQuery, meUserId?: number): Promise<TextPreviewDto[]> {
+    const user = await this.userRep.findOne({
+      where: {
+        id: query.userId,
+      },
+      relations: {
+        copyTexts: true,
+      }
+    });
 
-    if (query.userId) {
-      textsQb.where("text.userId = :userId", { userId: query.userId });
-    }
+    const textIds = user.copyTexts.map(text => text.id);
+    textIds.push(query.userId);
 
-    if (query.limit) {
-      textsQb.limit(query.limit);
-    }
+    const texts = await this.textRep.find({
+      where: [
+        { user: { id: query.userId } },
+        { id: In(user.copyTexts.map(text => text.id)) },
+      ],
+      relations: {
+        copyUsers: true,
+        user: true,
+      },
+      ...(query.limit && { take: query.limit }),
+      ...(query.offset && { skip: query.offset }),
+      ...(query.order && { order: { id: query.order } }),
+    });
+    return texts.map((text => getOneTextPreview(text, meUserId)));
+  }
 
-    if (query.offset) {
-      textsQb.offset(query.offset);
-    }
+  async getFriendsLastTexts(meUserId: number): Promise<ShortTextPreviewDto[]> {
+    const user = await this.userRep.findOne({
+      where: {
+        id: meUserId,
+      },
+      relations: {
+        friends: true,
+      }
+    });
+    const friends = user.friends;
 
-    if (query.order) {
-      textsQb.orderBy('text.id', query.order);
-    }
+    const fiveDaysAgo = new Date();
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 3);
 
-    return textsQb.getMany();
+    const texts = await this.textRep.find({
+      where: {
+        user: {
+          id: In(friends.map(user => user.id)),
+        },
+        createdDate: MoreThan(fiveDaysAgo),
+      },
+      relations: {
+        user: true,
+      },
+    });
+    return texts.map((text => mapShortTextDto(text)));
   }
 
   async getTextSpan(textId: number, userId: number): Promise<TextSpanDto> {
@@ -80,7 +112,7 @@ export class TextsService {
   }
 
   async getTranslation(value: string, userId: number): Promise<TranslationDto> {
-    const textRE = /\w+/gi;
+    const textRE = /^\w+$/gi;
     if (textRE.test(value)) {
       return this.wordsService.getTranslationWithStatus(value, userId)
     } else {
@@ -94,11 +126,12 @@ export class TextsService {
     }
   }
 
-  async createText(name: string, content: string, userId: number) {
+  async createText(name: string, content: string, userId: number): Promise<TextPreviewDto> {
     const text = new Text();
     text.name = name;
     text.content = content;
 
+    console.log(this.transApiService.translate);
     const translation = await this.transApiService.translate(content);
 
     text.translation = translation;
@@ -108,7 +141,45 @@ export class TextsService {
     text.user = user;
     await this.textRep.save(text);
     
-    return text
+    return getOneTextPreview(text)
+  }
+
+  async copyText(textId: number, meUserId: number) {
+    const text = await this.textRep.findOne({
+      where: {
+        id: textId,
+      },
+      relations: {
+        copyUsers: true,
+      }
+    });
+
+    const user = await this.userRep.findOne({
+      where: {
+        id: meUserId,
+      }
+    })
+
+    text.copyUsers.push(user);
+    await this.textRep.save(text);
+
+    return { message: 'Текст скопирован' }
+  }
+
+  async uncopyText(textId: number, meUserId: number) {
+    const text = await this.textRep.findOne({
+      where: {
+        id: textId,
+      },
+      relations: {
+        copyUsers: true,
+      }
+    });
+
+    text.copyUsers = text.copyUsers.filter(user => user.id !== meUserId);
+    await this.textRep.save(text);
+
+    return { message: 'Текст анскопирован' }
   }
 
   async changeName(name: string, textId: number) {

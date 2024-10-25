@@ -7,6 +7,7 @@ import { userProviders } from 'src/users/user.providers';
 import { wordProviders } from 'src/words/word.providers';
 import { TranslatorApiModule } from 'src/translator-api/translator-api.module';
 import { WordsModule } from 'src/words/words.module';
+import { FriendsModule } from 'src/friends/friends.module';
 
 @Module({
   controllers: [TextsController],
@@ -20,6 +21,7 @@ import { WordsModule } from 'src/words/words.module';
     DatabaseModule,
     TranslatorApiModule,
     WordsModule,
+    FriendsModule,
   ],
 })
 export class TextsModule {}
