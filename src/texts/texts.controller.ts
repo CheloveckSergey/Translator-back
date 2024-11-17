@@ -3,6 +3,12 @@ import { TextsService } from './texts.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { TokenPayload } from 'src/auth/dto';
 import { TextPreviewsQuery } from './dto/query';
+import { UncsJwtAuthGuard } from 'src/auth/unnecessaryJwt-auth.guard';
+
+// При получении текстов, необходимо проверять разрешения на получение текстов.
+// Если тексты может получить любой юзер, то необходимость проверки текущего пользователя отсутствует.
+// Если тексты может получить не любой юзер, то необходимо проверять текущего пользователя. Если
+// пользователь отсутсвует или у текущего пользователя нет доступа к этим текстам, то доступ отказан.
 
 @Controller('texts')
 export class TextsController {
@@ -11,13 +17,13 @@ export class TextsController {
     private textsService: TextsService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UncsJwtAuthGuard)
   @Get('/getAllTextPreviewsByUser')
   async getAllByUser(
-    @Req() req: { userPayload: TokenPayload },
+    @Req() req: { userPayload?: TokenPayload },
     @Query() query: TextPreviewsQuery,
   ) {
-    return this.textsService.getAllTextPreviewsByUser(query, req.userPayload.id);
+    return this.textsService.getAllTextPreviewsByUser(query, req.userPayload?.id);
   }
 
   @UseGuards(JwtAuthGuard)

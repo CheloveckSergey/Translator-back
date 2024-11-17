@@ -6,9 +6,10 @@ import { UsersModule } from './users/users.module';
 import { TextsModule } from './texts/texts.module';
 import { TranslatorApiModule } from './translator-api/translator-api.module';
 import { FriendsModule } from './friends/friends.module';
+import { ServiceModule } from './service/service.module';
 
 @Module({
-  imports: [DatabaseModule, WordsModule, UsersModule, AuthModule, TextsModule, TranslatorApiModule, FriendsModule],
+  imports: [DatabaseModule, WordsModule, UsersModule, AuthModule, TextsModule, TranslatorApiModule, FriendsModule, ServiceModule],
   controllers: [],
   providers: [],
 })

@@ -37,16 +37,15 @@ export class AuthService {
   async login(dto: LogDto): Promise<AuthDto> {
     const user = await this.usersService.getUserByLogin(dto.login);
     if (!user) {
-      throw new HttpException('Пользователь с таким логином не существует', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Пользователь с таким логином не найден', HttpStatus.UNAUTHORIZED);
     }
 
     const passwordRight = await bcrypt.compare(dto.password, user.password);
     if (!passwordRight) {
-      throw new HttpException('Неверный пароль', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Неверный пароль', HttpStatus.UNAUTHORIZED);
     }
 
     const tokens = await this.generateTokens(user);
-    //???????
     const refreshToken = await this.refreshTokRep.findOneBy({
         user,
     });
@@ -87,7 +86,9 @@ export class AuthService {
   async logout(userId: number) {
     const user = await this.usersService.getUserById(userId, userId);
     const refreshToken = await this.refreshTokRep.findOneBy({
-      user,
+      user: {
+        id: user.id,
+      },
     });
     await this.refreshTokRep.remove(refreshToken);
   }

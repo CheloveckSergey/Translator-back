@@ -16,6 +16,9 @@ export class User {
   @Column({ length: 500})
   password: string;
 
+  @Column({ length: 200, nullable: true })
+  avatar: string | undefined;
+
   @OneToMany(() => UserWord, (userWord) => userWord.user)
   userWords: UserWord[];
 

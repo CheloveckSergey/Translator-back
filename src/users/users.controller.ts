@@ -1,16 +1,9 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { TokenPayload } from 'src/auth/dto';
-
-export type SentRequestStatus = 'sentTo' | 'sentFrom' | undefined;
-
-export interface UserDto {
-  id: number;
-  login: string;
-  isFriend: boolean;
-  isSentRequest: SentRequestStatus;
-}
+import { UncsJwtAuthGuard } from 'src/auth/unnecessaryJwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('users')
 export class UsersController {
@@ -26,13 +19,23 @@ export class UsersController {
   ) {
     return this.usersService.getAllUsers1(req.userPayload.id);
   }
-
-  @UseGuards(JwtAuthGuard)
+  
+  @UseGuards(UncsJwtAuthGuard)
   @Get('/getUserById/:id')
   async getUserById(
     @Param('id') id: number,
-    @Req() req: { userPayload: TokenPayload },
+    @Req() req: { userPayload?: TokenPayload },
   ) {
-    return this.usersService.getUserById(id, req.userPayload.id);
+    return this.usersService.getUserById(id, req.userPayload?.id);
+  }
+  
+  @UseGuards(JwtAuthGuard)
+  @Post('/updateAvatar')
+  @UseInterceptors(FileInterceptor('img'))
+  async updateAvatar(
+    @Req() req: { userPayload: TokenPayload },
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.usersService.updateAvatar(file, req.userPayload.id);
   }
 }
