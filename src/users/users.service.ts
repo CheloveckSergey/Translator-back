@@ -1,9 +1,10 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { Not, Repository } from 'typeorm';
+import { FindOptionsRelationByString, FindOptionsRelations, Not, Repository } from 'typeorm';
 import { User } from './user.entity';
 import { SentRequestStatus, UserDto } from './dto/dto';
 import { mapUserDto } from './dto/mappers';
 import { MyImage } from 'src/service/service.service';
+import { UserQuery } from './dto/query';
 
 @Injectable()
 export class UsersService {
@@ -29,27 +30,37 @@ export class UsersService {
         fromRequests: true,
       }
     });
-    return users.map(user => mapUserDto(user, meUserId))
+    return users.map(user => mapUserDto(user))
   }
   
-  async getUserById(id: number, meUserId?: number): Promise<UserDto> {
+  async getUserById(id: number, query?: UserQuery, meUserId?: number): Promise<UserDto> {
+    if (query?.meUserId && query?.meUserId !== meUserId) {
+      throw new HttpException('Не совпадают ID пользователей', HttpStatus.UNAUTHORIZED)
+    }
+
+    let relations: FindOptionsRelations<User> = {}
+
+    if (query?.meUserId) {
+      relations.friends = true;
+      relations.toRequests = {
+        fromUser: true,
+      };
+      relations.fromRequests = {
+        toUser: true,
+      };
+    }
+
+    if (query?.wordsNumber) {
+      relations.userWords = true;
+    }
+
     const user = await this.userRepository.findOne({
       where: {
         id,
       },
-      ...(meUserId && {
-        relations: {
-          friends: true,
-          toRequests: {
-            fromUser: true,
-          },
-          fromRequests: {
-            toUser: true,
-          },
-        }
-      })
-    })
-    return mapUserDto(user, meUserId);
+      relations,      
+    });
+    return mapUserDto(user, query);
   }
 
   async getUserByLogin(login: string) {

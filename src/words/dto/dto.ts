@@ -1,4 +1,4 @@
-import { WordStatus } from "./user-word.entity";
+import { WordStatus } from "../user-word.entity";
 
 export type StringSpanDto = WordSpanDto | ConnectionDto;
 

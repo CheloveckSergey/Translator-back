@@ -6,4 +6,5 @@ export interface UserDto {
   avatar: string | null;
   isFriend: boolean;
   isSentRequest: SentRequestStatus;
+  wordsNumber?: number;
 }

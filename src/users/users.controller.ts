@@ -1,9 +1,10 @@
-import { Controller, Get, Param, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { TokenPayload } from 'src/auth/dto';
 import { UncsJwtAuthGuard } from 'src/auth/unnecessaryJwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UserQuery } from './dto/query';
 
 @Controller('users')
 export class UsersController {
@@ -25,8 +26,16 @@ export class UsersController {
   async getUserById(
     @Param('id') id: number,
     @Req() req: { userPayload?: TokenPayload },
+    @Query() query: UserQuery,
   ) {
-    return this.usersService.getUserById(id, req.userPayload?.id);
+    return this.usersService.getUserById(
+      id, 
+      { 
+        meUserId: query.meUserId && Number(query.meUserId),
+        wordsNumber: query.wordsNumber,
+      }, 
+      req.userPayload?.id
+    );
   }
   
   @UseGuards(JwtAuthGuard)

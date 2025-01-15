@@ -1,6 +1,6 @@
 import { TodayWordDto, TransWordDto, WholeWordDto } from "./dto";
-import { UserWord } from "./user-word.entity";
-import { Word } from "./word.entity";
+import { UserWord } from "../user-word.entity";
+import { Word } from "../word.entity";
 
 export function mapTranslationWordDto(word: Word): TransWordDto {
   if (!word?.translation.value) {

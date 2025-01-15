@@ -8,6 +8,7 @@ import { wordProviders } from 'src/words/word.providers';
 import { TranslatorApiModule } from 'src/translator-api/translator-api.module';
 import { WordsModule } from 'src/words/words.module';
 import { FriendsModule } from 'src/friends/friends.module';
+import { UserSettingsModule } from 'src/user-settings/user-settings.module';
 
 @Module({
   controllers: [TextsController],
@@ -22,6 +23,7 @@ import { FriendsModule } from 'src/friends/friends.module';
     TranslatorApiModule,
     WordsModule,
     FriendsModule,
+    UserSettingsModule,
   ],
 })
 export class TextsModule {}

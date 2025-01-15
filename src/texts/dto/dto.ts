@@ -1,4 +1,4 @@
-import { StringSpanDto, TransWordDto } from "src/words/dto";
+import { StringSpanDto, TransWordDto } from "src/words/dto/dto";
 
 export interface TextSpanDto {
   id: number,
@@ -36,4 +36,17 @@ export interface ShortTextPreviewDto {
     login: string,
   },
   createDate: string,
+}
+
+export interface TextSchema {
+  id: number,
+  name: string,
+  content: string,
+  author: {
+    id: number,
+    login: string,
+  }
+  createDate: Date,
+  updateDate: Date,
+  isCopied?: boolean,
 }

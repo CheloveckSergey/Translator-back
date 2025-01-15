@@ -1,7 +1,8 @@
 import { User } from "../user.entity";
 import { SentRequestStatus, UserDto } from "./dto";
+import { UserQuery } from "./query";
 
-export function mapUserDto(user: User, meUserId?: number): UserDto {
+export function mapUserDto(user: User, query?: UserQuery): UserDto {
   const userDto: UserDto = {
     id: user.id,
     login: user.login,
@@ -10,18 +11,20 @@ export function mapUserDto(user: User, meUserId?: number): UserDto {
     isSentRequest: undefined,
   }
 
-  if (!meUserId) {
-    return userDto;
+  if (query?.meUserId) {
+    if (user.friends.find(user => user.id === query.meUserId)) {
+      userDto.isFriend = true;
+    } else {
+      if (user.fromRequests.find(request => request.toUser.id === query.meUserId)) {
+        userDto.isSentRequest = 'sentFrom'
+      } else if (user.toRequests.find(request => request.fromUser.id === query.meUserId)) {
+        userDto.isSentRequest = 'sentTo';
+      }
+    }
   }
 
-  if (user.friends.find(user => user.id === meUserId)) {
-    userDto.isFriend = true;
-  } else {
-    if (user.fromRequests.find(request => request.toUser.id === meUserId)) {
-      userDto.isSentRequest = 'sentFrom'
-    } else if (user.toRequests.find(request => request.fromUser.id === meUserId)) {
-      userDto.isSentRequest = 'sentTo';
-    }
+  if (query?.wordsNumber) {
+    userDto.wordsNumber = user.userWords.length;
   }
 
   return userDto;

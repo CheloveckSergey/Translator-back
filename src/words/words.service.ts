@@ -5,8 +5,8 @@ import { UserWord, WordStatus } from './user-word.entity';
 import { TranslatorApiService } from 'src/translator-api/translator-api.service';
 import { User } from 'src/users/user.entity';
 import { Translation } from './translation.entity';
-import { TodayWordDto, TransStatusWordDto, TransWordDto, WholeWordDto, WordSpanDto } from './dto';
-import { mapTodayWordDto, mapTranslationWordDto, mapWholeWordDto } from './mappers';
+import { TodayWordDto, TransStatusWordDto, TransWordDto, WholeWordDto, WordSpanDto } from './dto/dto';
+import { mapTodayWordDto, mapTranslationWordDto, mapWholeWordDto } from './dto/mappers';
 import { WholeWordQuery } from './words.controller';
 
 function isToday(date: Date): boolean {
@@ -42,8 +42,6 @@ export class WordsService {
   ) {}
 
   async getAllWords(query: WholeWordQuery): Promise<WholeWordDto[]> {
-
-
     const words = await this.userWordRepository.find({
       where: {
         user: {
@@ -218,6 +216,7 @@ export class WordsService {
   }
 
   async addWord(value: string): Promise<Word> {
+    console.log(value);
     const translation = await this.translatorApiService.translate(value);
   
     const newTranslation = new Translation();

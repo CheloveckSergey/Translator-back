@@ -1,15 +1,15 @@
 export interface GetFriendsQuery {
+  userId: number,
   limit?: number,
   offset?: number,
-  userId: number,
-  order: 'ASC' | 'DESC',
+  order?: 'ASC' | 'DESC',
 }
 
 export interface GetFindFriendsQuery {
+  userId: number,
   limit?: number,
   offset?: number,
-  userId: number,
-  order: 'ASC' | 'DESC',
+  order?: 'ASC' | 'DESC',
 }
 
 export interface GetFUsersQuery {

@@ -17,6 +17,7 @@ export interface AuthDto {
   id: number,
   login: string,
   tokens: Tokens;
+  avatar?: string | undefined;
 }
 
 export interface TokenPayload {
@@ -28,4 +29,5 @@ export interface AuthResDto {
   id: number, 
   login: string, 
   accessToken: string,
+  avatar?: string | undefined,
 }

@@ -1,4 +1,4 @@
-import { ShortTextPreviewDto, TextPreviewDto } from "./dto";
+import { ShortTextPreviewDto, TextPreviewDto, TextSchema } from "./dto";
 import { Text } from "../text.entity";
 import { HttpException, HttpStatus } from "@nestjs/common";
 
@@ -44,3 +44,20 @@ export function mapShortTextDto(text: Text) {
   }
   return textDto;
 }
+
+// export function getTextPreviewDto<K extends keyof TextSchema>(
+//   text: Text, 
+//   query: TextsQuery<K>, 
+//   meUserId?: number
+// ): Pick<TextSchema, K | 'id' | 'name'> {
+
+//   const dto: Pick<TextSchema, K | 'id' | 'name'> = {
+//     'id': 12,
+//     'name': 'sadf',
+//   }
+
+//   //include выдаёт непонятную ошибку ебать
+//   if (query.fields.includes('content')) {
+//     dto.content = text.content
+//   }
+// }

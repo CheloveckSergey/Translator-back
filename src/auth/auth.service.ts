@@ -58,7 +58,7 @@ export class AuthService {
       refreshToken.user = user;
       await this.refreshTokRep.save(refreshToken);
     }
-    return {id: user.id, login: user.login, tokens};
+    return {id: user.id, login: user.login, tokens, avatar: user.avatar};
   }
 
   async refresh(refreshTok: string): Promise<AuthDto> {
@@ -80,11 +80,11 @@ export class AuthService {
 
     const user = await this.usersService.getUserByLogin(payload.login);
     const tokens = await this.generateTokens(user);
-    return {id: user.id, login: user.login, tokens};
+    return {id: user.id, login: user.login, tokens, avatar: user.avatar};
   }
 
   async logout(userId: number) {
-    const user = await this.usersService.getUserById(userId, userId);
+    const user = await this.usersService.getUserById(userId);
     const refreshToken = await this.refreshTokRep.findOneBy({
       user: {
         id: user.id,

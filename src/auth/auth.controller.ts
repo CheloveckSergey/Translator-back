@@ -47,6 +47,7 @@ export class AuthController {
       id: authDto.id, 
       login: authDto.login, 
       accessToken: authDto.tokens.accessToken,
+      avatar: authDto.avatar
     }
     return res.send(authResDto);
   }
@@ -62,6 +63,7 @@ export class AuthController {
       id: authDto.id, 
       login: authDto.login, 
       accessToken: authDto.tokens.accessToken,
+      avatar: authDto.avatar,
     }
     return authResDtp;
   }
