@@ -19,7 +19,7 @@ export class Text {
   @Column('text')
   translation: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, (user) => user.texts)
   @JoinColumn()
   user: User;
 

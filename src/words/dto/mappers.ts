@@ -1,4 +1,4 @@
-import { TodayWordDto, TransWordDto, WholeWordDto } from "./dto";
+import { TodayWordDto, TransWordDto, WholeWordDto, WordsInfoDto } from "./dto";
 import { UserWord } from "../user-word.entity";
 import { Word } from "../word.entity";
 
@@ -32,4 +32,13 @@ export function mapWholeWordDto(userWord: UserWord): WholeWordDto {
     createDate: userWord.createDate,
   }
   return wholeWordDto;
+}
+
+export function mapWordsInfo(processWordsNumber: number, studiedWordsNumber: number): WordsInfoDto {
+  const dto: WordsInfoDto = {
+    generalWordsNumber: processWordsNumber + studiedWordsNumber,
+    process: processWordsNumber,
+    studied: studiedWordsNumber,
+  }
+  return dto
 }

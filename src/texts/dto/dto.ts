@@ -42,11 +42,17 @@ export interface TextSchema {
   id: number,
   name: string,
   content: string,
+  createDate: Date,
+  updateDate: Date,
   author: {
     id: number,
     login: string,
   }
-  createDate: Date,
-  updateDate: Date,
-  isCopied?: boolean,
+  isCopied: boolean,
+}
+
+export interface TextsInfoDto {
+  generalTextsNumber: number,
+  ownTextsNumber: number,
+  copiedTextsNumber: number,
 }

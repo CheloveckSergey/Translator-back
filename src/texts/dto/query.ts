@@ -5,23 +5,31 @@ export interface TextPreviewsQuery extends UsualQuery {
   userId: number,
 }
 
-type By = 'user' | 'friend' | 'title';
+export interface TextsInfoQuery {
+  userId: number,
+}
+
+export interface TextPreviewsQuery extends UsualQuery {
+  userId: number,
+}
+
+type By = 'user' | 'friends' | 'title';
 
 interface BaseByOptions {
   by: By,
 }
 
-interface ByUser {
+interface ByUser extends BaseByOptions {
   by: 'user',
   userId: number,
 }
 
-interface ByFriends {
+interface ByFriends extends BaseByOptions {
   by: 'friends',
   userId: number,
 }
 
-interface ByTitle {
+interface ByTitle extends BaseByOptions {
   by: 'title',
   title: string,
 }

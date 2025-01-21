@@ -18,29 +18,12 @@ export class UsersService {
     const users = await this.userRepository.find();
     return users;
   }
-
-  async getAllUsers1(meUserId: number): Promise<UserDto[]> {
-    const users = await this.userRepository.find({
-      where: {
-        id: Not(meUserId)
-      },
-      relations: {
-        friends: true,
-        toRequests: true,
-        fromRequests: true,
-      }
-    });
-    return users.map(user => mapUserDto(user))
-  }
   
-  async getUserById(id: number, query?: UserQuery, meUserId?: number): Promise<UserDto> {
-    if (query?.meUserId && query?.meUserId !== meUserId) {
-      throw new HttpException('Не совпадают ID пользователей', HttpStatus.UNAUTHORIZED)
-    }
+  async getUserById(id: number, query: UserQuery, meUserId?: number): Promise<UserDto> {
 
     let relations: FindOptionsRelations<User> = {}
 
-    if (query?.meUserId) {
+    if (query?.friendship && meUserId) {
       relations.friends = true;
       relations.toRequests = {
         fromUser: true,
@@ -60,7 +43,7 @@ export class UsersService {
       },
       relations,      
     });
-    return mapUserDto(user, query);
+    return mapUserDto(user, query, meUserId);
   }
 
   async getUserByLogin(login: string) {

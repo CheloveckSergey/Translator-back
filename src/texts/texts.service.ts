@@ -1,13 +1,13 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { In, MoreThan, Repository, getRepository } from 'typeorm';
+import { FindOptionsOrder, FindOptionsRelationByString, FindOptionsRelations, FindOptionsWhere, In, MoreThan, Repository, getRepository } from 'typeorm';
 import { Text } from './text.entity';
 import { User } from 'src/users/user.entity';
 import { TranslatorApiService } from 'src/translator-api/translator-api.service';
 import { WordsService } from 'src/words/words.service';
-import { ShortTextPreviewDto, TextPreviewDto, TextSchema, TextSpanDto, TransTextDto, TranslationDto } from './dto/dto';
+import { ShortTextPreviewDto, TextPreviewDto, TextSchema, TextSpanDto, TextsInfoDto, TransTextDto, TranslationDto } from './dto/dto';
 import { ConnectionDto, StringSpanDto } from 'src/words/dto/dto';
-import { getOneTextPreview, mapShortTextDto } from './dto/mappers';
-import { TextPreviewsQuery } from './dto/query';
+import { getOneTextPreview, mapShortTextDto, mapTextDto, mapTextsInfo } from './dto/mappers';
+import { TextPreviewsQuery, TextsInfoQuery, TextsQuery } from './dto/query';
 import { UserSettingsService } from 'src/user-settings/user-settings.service';
 
 @Injectable()
@@ -23,77 +23,73 @@ export class TextsService {
     private userSettingsService: UserSettingsService,
   ) {}
 
-  // async getTexts<K extends keyof TextSchema>(query: TextsQuery<K>, meUserId?: number) {
-  //   const where: FindOptionsWhere<Text>[] = [];
-  //   const relations: FindOptionsRelations<Text> = {}
+  async getTexts<K extends keyof TextSchema>(query: TextsQuery<K>, meUserId?: number) {
+    const where: FindOptionsWhere<Text>[] = [];
+    const relations: FindOptionsRelations<Text> = {}
 
-  //   if (query.by === 'user') {
-  //     const access = await this.userSettingsService.checkTextsPrivacy(query.userId, meUserId);
-  //     if (!access) {
-  //       throw new HttpException('Вы не можете', HttpStatus.FORBIDDEN)
-  //     }
+    if (query.by === 'user') {
+      const access = await this.userSettingsService.checkTextsPrivacy(query.userId, meUserId);
+      if (!access) {
+        throw new HttpException('Вы не можете', HttpStatus.FORBIDDEN)
+      }
 
-  //     const user = await this.userRep.findOne({
-  //       where: {
-  //         id: query.userId,
-  //       },
-  //       relations: {
-  //         copyTexts: true,
-  //       }
-  //     });
+      const user = await this.userRep.findOne({
+        where: {
+          id: query.userId,
+        },
+        relations: {
+          copyTexts: true,
+        }
+      });
 
-  //     where.push({ user: { id: query.userId } });
-  //     where.push({ id: In(user.copyTexts.map(text => text.id)) });
+      where.push({ user: { id: query.userId } });
+      where.push({ id: In(user.copyTexts.map(text => text.id)) });
 
-  //     relations.copyUsers = true;
-  //     relations.user = true;
-  //   }
-    
-  //   if (query.by === 'friends') {
-  //     if (query.userId !== meUserId) {
-  //       throw new HttpException('Вы не можете', HttpStatus.FORBIDDEN)
-  //     }
+      relations.copyUsers = true;
+      relations.user = true;
+    } else if (query.by === 'friends') {
+      if (query.userId !== meUserId) {
+        throw new HttpException('Вы не можете', HttpStatus.FORBIDDEN)
+      }
 
-  //     const user = await this.userRep.findOne({
-  //       where: {
-  //         id: query.userId,
-  //       },
-  //       relations: {
-  //         friends: true,
-  //       }
-  //     });
-  //     const friends = user.friends;
+      const user = await this.userRep.findOne({
+        where: {
+          id: query.userId,
+        },
+        relations: {
+          friends: true,
+        }
+      });
+      const friends = user.friends;
   
-  //     const fiveDaysAgo = new Date();
-  //     fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 3);
+      const fiveDaysAgo = new Date();
+      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 3);
 
-  //     where.push({
-  //       user: {
-  //         id: In(friends.map(user => user.id)),
-  //       },
-  //       createdDate: MoreThan(fiveDaysAgo),
-  //     })
+      where.push({
+        user: {
+          id: In(friends.map(user => user.id)),
+        },
+        createdDate: MoreThan(fiveDaysAgo),
+      })
       
-  //     relations.user = true;
-  //   }
-    
-  //   if (query.by === 'title') {
-  //     where.push({ name: query.title });
-  //   }
+      relations.user = true;
+    } else if (query.by === 'title') {
+      where.push({ name: query.title });
+    }
 
-  //   const take: number | undefined = query.limit;
-  //   const skip: number | undefined = query.offset;
-  //   const order: FindOptionsOrder<Text> | undefined = { id: query.order }
+    const take: number | undefined = query.limit;
+    const skip: number | undefined = query.offset;
+    const order: FindOptionsOrder<Text> | undefined = { id: query.order }
 
-  //   const texts = await this.textRep.find({
-  //     where: where,
-  //     relations,
-  //     take,
-  //     skip,
-  //     order,
-  //   });
-  //   return texts.map((text => getOneTextPreview(text, meUserId)));
-  // }
+    const texts = await this.textRep.find({
+      where,
+      relations,
+      take,
+      skip,
+      order,
+    });
+    return texts.map((text => mapTextDto(text, query, meUserId)));
+  }
 
   async getAllTextPreviewsByUser(query: TextPreviewsQuery, meUserId?: number): Promise<TextPreviewDto[]> {
     if (query.userId != meUserId) {
@@ -201,6 +197,25 @@ export class TextsService {
       }
       return transTextDto;
     }
+  }
+
+  async getTextsInfo(query: TextsInfoQuery): Promise<TextsInfoDto> {
+
+    const where: FindOptionsWhere<User> | FindOptionsWhere<User>[] = [];
+    where.push({
+      id: query.userId,
+    })
+
+    const relations: FindOptionsRelations<User> = {}
+    relations.texts = true;
+    relations.copyTexts = true;
+
+    const user = await this.userRep.findOne({
+      where,
+      relations,
+    })
+
+    return mapTextsInfo(user)
   }
 
   async createText(name: string, content: string, userId: number): Promise<TextPreviewDto> {

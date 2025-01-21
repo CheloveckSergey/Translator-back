@@ -1,6 +1,8 @@
-import { ShortTextPreviewDto, TextPreviewDto, TextSchema } from "./dto";
+import { ShortTextPreviewDto, TextPreviewDto, TextSchema, TextsInfoDto } from "./dto";
 import { Text } from "../text.entity";
 import { HttpException, HttpStatus } from "@nestjs/common";
+import { User } from "src/users/user.entity";
+import { TextsQuery } from "./query";
 
 export function getOneTextPreview(text: Text, meUserId?: number): TextPreviewDto {
   if (!text.user) {
@@ -13,10 +15,12 @@ export function getOneTextPreview(text: Text, meUserId?: number): TextPreviewDto
     isCopied = true;
   }
 
+  const content = text.content.slice(0, 652);
+
   const oneText: TextPreviewDto = {
     id: text.id,
     name: text.name,
-    content: text.content,
+    content,
     author: {
       id: text.user.id,
       login: text.user.login,
@@ -45,19 +49,60 @@ export function mapShortTextDto(text: Text) {
   return textDto;
 }
 
-// export function getTextPreviewDto<K extends keyof TextSchema>(
-//   text: Text, 
-//   query: TextsQuery<K>, 
-//   meUserId?: number
-// ): Pick<TextSchema, K | 'id' | 'name'> {
+export function mapTextsInfo(user: User): TextsInfoDto {
+  const ownTextsNumber = user.texts.length;
+  const copiedTextsNumber = user.copyTexts.length;
+  const generalTextsNumber = ownTextsNumber + copiedTextsNumber;
 
-//   const dto: Pick<TextSchema, K | 'id' | 'name'> = {
-//     'id': 12,
-//     'name': 'sadf',
-//   }
+  const textsInfoDto: TextsInfoDto = {
+    generalTextsNumber,
+    ownTextsNumber,
+    copiedTextsNumber,
+  }
 
-//   //include выдаёт непонятную ошибку ебать
-//   if (query.fields.includes('content')) {
-//     dto.content = text.content
-//   }
-// }
+  return textsInfoDto
+}
+
+export function mapTextDto<K extends keyof TextSchema>(
+  text: Text, 
+  query: TextsQuery<K>, 
+  meUserId?: number
+): Pick<TextSchema, K> {
+
+  const dto: Partial<TextSchema> = {}
+
+  for (let field of query.fields) {
+    if (field === 'id') {
+      dto['id'] = text.id;
+    }
+    if (field === 'name') {
+      dto['name'] = text.content;
+    }
+    if (field === 'content') {
+      dto['content'] = text.content;
+    }
+    if (field === 'createDate') {
+      dto['createDate'] = text.createdDate;
+    }
+    if (field === 'updateDate') {
+      dto['updateDate'] = text.updatedDate;
+    }
+    if (field === 'author') {
+      dto['author'] = {
+        id: text.user.id,
+        login: text.user.login,
+      };
+    }
+    if (field === 'isCopied') {
+      let isCopied: boolean = false;
+
+      if (meUserId && text.copyUsers?.some(user => user.id === meUserId)) {
+        isCopied = true;
+      }
+
+      dto['isCopied'] = isCopied;
+    }
+  }
+
+  return dto as Pick<TextSchema, K>
+}

@@ -12,14 +12,6 @@ export class UsersController {
   constructor(
     private usersService: UsersService,
   ) {}
-
-  @UseGuards(JwtAuthGuard)
-  @Get('/getAllUsers1')
-  async getAllUsers1(
-    @Req() req: { userPayload: TokenPayload },
-  ) {
-    return this.usersService.getAllUsers1(req.userPayload.id);
-  }
   
   @UseGuards(UncsJwtAuthGuard)
   @Get('/getUserById/:id')
@@ -30,10 +22,7 @@ export class UsersController {
   ) {
     return this.usersService.getUserById(
       id, 
-      { 
-        meUserId: query.meUserId && Number(query.meUserId),
-        wordsNumber: query.wordsNumber,
-      }, 
+      query, 
       req.userPayload?.id
     );
   }

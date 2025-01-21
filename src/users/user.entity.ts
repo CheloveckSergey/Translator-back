@@ -32,6 +32,9 @@ export class User {
   @OneToMany(() => FriendRequest, (request) => request.toUser)
   toRequests: FriendRequest[];
 
+  @OneToMany(() => Text, (text) => text.user)
+  texts: Text[];
+
   @ManyToMany(() => Text, (text) => text.copyUsers)
   copyTexts: Text[];
 }

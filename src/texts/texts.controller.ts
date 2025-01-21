@@ -2,8 +2,9 @@ import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } fro
 import { TextsService } from './texts.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { TokenPayload } from 'src/auth/dto';
-import { TextPreviewsQuery } from './dto/query';
+import { TextPreviewsQuery, TextsInfoQuery, TextsQuery } from './dto/query';
 import { UncsJwtAuthGuard } from 'src/auth/unnecessaryJwt-auth.guard';
+import { TextSchema } from './dto/dto';
 
 // При получении текстов, необходимо проверять разрешения на получение текстов.
 // Если тексты может получить любой юзер, то необходимость проверки текущего пользователя отсутствует.
@@ -16,6 +17,15 @@ export class TextsController {
   constructor(
     private textsService: TextsService,
   ) {}
+
+  @UseGuards(UncsJwtAuthGuard)
+  @Get('/getTexts')
+  async getTexts(
+    @Req() req: { userPayload?: TokenPayload },
+    @Query() query: TextsQuery<keyof TextSchema>,
+  ) {
+    return this.textsService.getTexts(query, req.userPayload?.id);
+  }
 
   @UseGuards(UncsJwtAuthGuard)
   @Get('/getAllTextPreviewsByUser')
@@ -41,6 +51,15 @@ export class TextsController {
     @Param('textId') textId: number,
   ) {
     return this.textsService.getTextSpan(textId, req.userPayload.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/getTextsInfo')
+  async getTextsInfo(
+    @Req() req: { userPayload: TokenPayload },
+    @Query() query: TextsInfoQuery,
+  ) {
+    return this.textsService.getTextsInfo(query);
   }
 
   @UseGuards(JwtAuthGuard)

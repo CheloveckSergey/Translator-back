@@ -59,9 +59,15 @@ export class UserSettingsService {
         return false
       }
 
-      const friends = await this.friendsService.getFriends({
-        userId,
+      const user = await this.userRepository.findOne({
+        where: {
+          id: userId,
+        },
+        relations: {
+          friends: true,
+        }
       });
+      const friends = user.friends;
       if (friends.find(friend => friend.id === meUserId)) {
         return true
       } else {

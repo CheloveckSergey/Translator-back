@@ -5,9 +5,10 @@ import { UserWord, WordStatus } from './user-word.entity';
 import { TranslatorApiService } from 'src/translator-api/translator-api.service';
 import { User } from 'src/users/user.entity';
 import { Translation } from './translation.entity';
-import { TodayWordDto, TransStatusWordDto, TransWordDto, WholeWordDto, WordSpanDto } from './dto/dto';
-import { mapTodayWordDto, mapTranslationWordDto, mapWholeWordDto } from './dto/mappers';
+import { TodayWordDto, TransStatusWordDto, TransWordDto, WholeWordDto, WordSpanDto, WordsInfoDto } from './dto/dto';
+import { mapTodayWordDto, mapTranslationWordDto, mapWholeWordDto, mapWordsInfo } from './dto/mappers';
 import { WholeWordQuery } from './words.controller';
+import { WordsInfoQuery } from './dto/query';
 
 function isToday(date: Date): boolean {
   if (!date) {
@@ -213,6 +214,26 @@ export class WordsService {
       return mapTodayWordDto(userWord)
     });
     return newTodayList;
+  }
+
+  async getWordsInfo(query: WordsInfoQuery): Promise<WordsInfoDto> {
+    const processWords = await this.userWordRepository.find({
+      where: {
+        user: {
+          id: query.userId,
+        },
+        status: WordStatus.PROCESS,
+      }
+    });
+    const studiedWords = await this.userWordRepository.find({
+      where: {
+        user: {
+          id: query.userId,
+        },
+        status: WordStatus.STUDIED,
+      }
+    });
+    return mapWordsInfo(processWords.length, studiedWords.length)
   }
 
   async addWord(value: string): Promise<Word> {

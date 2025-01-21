@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Put, Query, Req, UseGuards } from '
 import { WordsService } from './words.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { TokenPayload } from 'src/auth/dto';
+import { WordsInfoQuery } from './dto/query';
 
 export interface WholeWordQuery {
   limit?: number,
@@ -40,6 +41,15 @@ export class WordsController {
     @Req() req: { userPayload: TokenPayload },
   ) {
     return this.wordsService.getTodayList(req.userPayload.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/getWordsInfo/')
+  async getWordsInfo(
+    @Req() req: { userPayload: TokenPayload },
+    @Query() query: WordsInfoQuery,
+  ) {
+    return this.wordsService.getWordsInfo(query);
   }
 
   @UseGuards(JwtAuthGuard)

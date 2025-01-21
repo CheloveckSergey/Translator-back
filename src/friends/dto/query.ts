@@ -1,43 +1,14 @@
-export interface GetFriendsQuery {
+import { UsualQuery } from "src/shared/types";
+
+export interface FriendRequestQuery extends UsualQuery {
   userId: number,
-  limit?: number,
-  offset?: number,
-  order?: 'ASC' | 'DESC',
+  wordsNumber?: boolean,
 }
 
-export interface GetFindFriendsQuery {
-  userId: number,
-  limit?: number,
-  offset?: number,
-  order?: 'ASC' | 'DESC',
-}
+export interface GetFriendsQuery extends FriendRequestQuery {}
 
-export interface GetFUsersQuery {
-  limit?: number,
-  offset?: number,
-  friendsUserId?: number,
-  unfriendsUserId?: number,
-  order: 'ASC' | 'DESC',
-}
+export interface GetFindFriendsQuery extends FriendRequestQuery {}
 
-export interface GetRequestsQuery {
-  limit?: number,
-  offset?: number,
-  userId: number,
-  type: 'from' | 'to',
-  order: 'ASC' | 'DESC',
-}
+export interface GetIncomeRequestsQuery extends FriendRequestQuery {}
 
-export interface GetIncomeRequestsQuery {
-  limit?: number,
-  offset?: number,
-  userId: number,
-  order: 'ASC' | 'DESC',
-}
-
-export interface GetOutcomeRequestsQuery {
-  limit?: number,
-  offset?: number,
-  userId: number,
-  order: 'ASC' | 'DESC',
-}
+export interface GetOutcomeRequestsQuery extends FriendRequestQuery {}

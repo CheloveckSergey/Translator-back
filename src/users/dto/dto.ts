@@ -4,7 +4,7 @@ export interface UserDto {
   id: number;
   login: string;
   avatar: string | null;
-  isFriend: boolean;
-  isSentRequest: SentRequestStatus;
+  isFriend?: boolean;
+  isSentRequest?: SentRequestStatus;
   wordsNumber?: number;
 }

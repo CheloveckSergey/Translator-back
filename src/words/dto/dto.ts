@@ -46,3 +46,9 @@ export interface WholeWordDto {
   updateDate: Date,
   quantity: number,
 }
+
+export interface WordsInfoDto {
+  generalWordsNumber: number,
+  process: number,
+  studied: number,
+}

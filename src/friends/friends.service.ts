@@ -22,10 +22,12 @@ export class FriendsService {
         id: query.userId,
       },
       relations: {
-        friends: true,
+        friends: {
+          userWords: true,
+        },
       }
     });
-    return user.friends.map(mapFriendDto)
+    return user.friends.map(user => mapFriendDto(user, query))
   }
 
   async getFindFriends(query: GetFindFriendsQuery): Promise<FindFriendDto[]> {
@@ -56,9 +58,12 @@ export class FriendsService {
           Not(In(toUserIds)), 
           Not(In(fromUserIds)), 
         ),
-      }
+      },
+      relations: {
+        userWords: true,
+      },
     });
-    return users.map(mapFindFriendDto)
+    return users.map(user => mapFindFriendDto(user, query))
   }
 
   async getIncomeRequests(query: GetIncomeRequestsQuery) {
@@ -70,10 +75,12 @@ export class FriendsService {
         status: Not(FriendRequestStatus.ACCEPTED),
       },
       relations: {
-        fromUser: true,
+        fromUser: {
+          userWords: true,
+        },
       }
     });
-    return requests.map(mapIncomeRequestDto)
+    return requests.map(request => mapIncomeRequestDto(request, query))
   }
 
   async getOutcomeRequests(query: GetOutcomeRequestsQuery) {
@@ -85,10 +92,12 @@ export class FriendsService {
         status: Not(FriendRequestStatus.ACCEPTED),
       },
       relations: {
-        toUser: true,
+        toUser: {
+          userWords: true,
+        },
       }
     });
-    return requests.map(mapOutomeRequestDto)
+    return requests.map(request => mapOutomeRequestDto(request, query))
   }
 
   async sendRequest(fromUserId: number, toUserId: number) {
