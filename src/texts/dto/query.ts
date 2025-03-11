@@ -13,31 +13,9 @@ export interface TextPreviewsQuery extends UsualQuery {
   userId: number,
 }
 
-type By = 'user' | 'friends' | 'title';
+export interface AllTextPreviewsQuery extends UsualQuery {}
 
-interface BaseByOptions {
-  by: By,
+export interface TextQuery {
+  textId: number,
+  page: number,
 }
-
-interface ByUser extends BaseByOptions {
-  by: 'user',
-  userId: number,
-}
-
-interface ByFriends extends BaseByOptions {
-  by: 'friends',
-  userId: number,
-}
-
-interface ByTitle extends BaseByOptions {
-  by: 'title',
-  title: string,
-}
-
-type ByOptions = ByUser | ByFriends | ByTitle;
-
-interface FieldsOptions<K extends keyof TextSchema> {
-  fields: K[],
-}
-
-export type TextsQuery<K extends keyof TextSchema> = ByOptions & UsualQuery & FieldsOptions<K>

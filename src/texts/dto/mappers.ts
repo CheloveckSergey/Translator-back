@@ -2,7 +2,6 @@ import { ShortTextPreviewDto, TextPreviewDto, TextSchema, TextsInfoDto } from ".
 import { Text } from "../text.entity";
 import { HttpException, HttpStatus } from "@nestjs/common";
 import { User } from "src/users/user.entity";
-import { TextsQuery } from "./query";
 
 export function getOneTextPreview(text: Text, meUserId?: number): TextPreviewDto {
   if (!text.user) {
@@ -15,7 +14,14 @@ export function getOneTextPreview(text: Text, meUserId?: number): TextPreviewDto
     isCopied = true;
   }
 
-  const content = text.content.slice(0, 652);
+  let content: string;
+  if (text.blocks?.length) {
+    const content: string = text.blocks.slice(0, 5).reduce((prev, cur) => {
+      return prev + cur.original
+    }, '');
+  } else {
+    content = '';
+  }
 
   const oneText: TextPreviewDto = {
     id: text.id,
@@ -25,9 +31,9 @@ export function getOneTextPreview(text: Text, meUserId?: number): TextPreviewDto
       id: text.user.id,
       login: text.user.login,
     },
-    isCopied,
     updateDate: text.updatedDate,
     createDate: text.createdDate,
+    isCopied,
   }
   return oneText
 }
@@ -63,46 +69,9 @@ export function mapTextsInfo(user: User): TextsInfoDto {
   return textsInfoDto
 }
 
-export function mapTextDto<K extends keyof TextSchema>(
-  text: Text, 
-  query: TextsQuery<K>, 
-  meUserId?: number
-): Pick<TextSchema, K> {
-
-  const dto: Partial<TextSchema> = {}
-
-  for (let field of query.fields) {
-    if (field === 'id') {
-      dto['id'] = text.id;
-    }
-    if (field === 'name') {
-      dto['name'] = text.content;
-    }
-    if (field === 'content') {
-      dto['content'] = text.content;
-    }
-    if (field === 'createDate') {
-      dto['createDate'] = text.createdDate;
-    }
-    if (field === 'updateDate') {
-      dto['updateDate'] = text.updatedDate;
-    }
-    if (field === 'author') {
-      dto['author'] = {
-        id: text.user.id,
-        login: text.user.login,
-      };
-    }
-    if (field === 'isCopied') {
-      let isCopied: boolean = false;
-
-      if (meUserId && text.copyUsers?.some(user => user.id === meUserId)) {
-        isCopied = true;
-      }
-
-      dto['isCopied'] = isCopied;
-    }
-  }
-
-  return dto as Pick<TextSchema, K>
-}
+// export function mapCreateTextResponse(text: Text): CreateTextResponse {
+//   return {
+//     id: text.id,
+//     name: text.name,
+//   }
+// }

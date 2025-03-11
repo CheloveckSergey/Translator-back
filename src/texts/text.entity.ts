@@ -1,5 +1,6 @@
 import { User } from "src/users/user.entity";
-import { Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { TextBlock } from "./block.entity";
 
 @Entity({
   name: 'texts',
@@ -13,11 +14,13 @@ export class Text {
   })
   name: string;
 
-  @Column("text")
-  content: string;
+  @Column({
+    default: false,
+  })
+  premiere: boolean;
 
-  @Column('text')
-  translation: string;
+  @OneToMany(() => TextBlock, (block) => block.text)
+  blocks: TextBlock[];
 
   @ManyToOne(() => User, (user) => user.texts)
   @JoinColumn()

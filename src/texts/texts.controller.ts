@@ -2,9 +2,9 @@ import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } fro
 import { TextsService } from './texts.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { TokenPayload } from 'src/auth/dto';
-import { TextPreviewsQuery, TextsInfoQuery, TextsQuery } from './dto/query';
+import { AllTextPreviewsQuery, TextPreviewsQuery, TextQuery, TextsInfoQuery } from './dto/query';
 import { UncsJwtAuthGuard } from 'src/auth/unnecessaryJwt-auth.guard';
-import { TextSchema } from './dto/dto';
+import { CreateTextDto, SaveBlocksDto, TextSchema } from './dto/dto';
 
 // При получении текстов, необходимо проверять разрешения на получение текстов.
 // Если тексты может получить любой юзер, то необходимость проверки текущего пользователя отсутствует.
@@ -19,21 +19,21 @@ export class TextsController {
   ) {}
 
   @UseGuards(UncsJwtAuthGuard)
-  @Get('/getTexts')
-  async getTexts(
-    @Req() req: { userPayload?: TokenPayload },
-    @Query() query: TextsQuery<keyof TextSchema>,
-  ) {
-    return this.textsService.getTexts(query, req.userPayload?.id);
-  }
-
-  @UseGuards(UncsJwtAuthGuard)
   @Get('/getAllTextPreviewsByUser')
   async getAllByUser(
     @Req() req: { userPayload?: TokenPayload },
     @Query() query: TextPreviewsQuery,
   ) {
     return this.textsService.getAllTextPreviewsByUser(query, req.userPayload?.id);
+  }
+
+  @UseGuards(UncsJwtAuthGuard)
+  @Get('/getAllTextPreviews')
+  async getAllTextPreviews(
+    @Req() req: { userPayload?: TokenPayload },
+    @Query() query: AllTextPreviewsQuery,
+  ) {
+    return this.textsService.getAllTextPreviews(query, req.userPayload?.id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -54,6 +54,15 @@ export class TextsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('/getEditingTextSpan')
+  async getEditingTextSpan(
+    @Req() req: { userPayload: TokenPayload },
+    @Query() query: TextQuery,
+  ) {
+    return this.textsService.getEditingTextSpan(query);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('/getTextsInfo')
   async getTextsInfo(
     @Req() req: { userPayload: TokenPayload },
@@ -65,10 +74,19 @@ export class TextsController {
   @UseGuards(JwtAuthGuard)
   @Post('/create')
   async create(
-    @Body() dto: { name: string, content: string },
+    @Body() dto: CreateTextDto,
     @Req() req: { userPayload: TokenPayload }
   ) {
-    return this.textsService.createText(dto.name, dto.content, req.userPayload.id)
+    return this.textsService.createText(dto, req.userPayload.id)
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('/saveBlocks')
+  async saveBlocks(
+    @Body() dto: SaveBlocksDto,
+    @Req() req: { userPayload: TokenPayload }
+  ) {
+    return this.textsService.saveBlocks(dto, req.userPayload.id)
   }
 
   @UseGuards(JwtAuthGuard)
